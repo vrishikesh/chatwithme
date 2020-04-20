@@ -57,10 +57,45 @@
           placeholder="Enter Message"
           required
         />
-        <button class="btn btn-lg btn-primary btn-block" type="text">
+        <button class="btn btn-lg btn-primary btn-block" type="submit">
           Send
         </button>
       </form>
+
+      <hr />
+
+      <div class="row">
+        <div class="col-sm-6 col-md-6 col-lg-6">
+          remote
+          <video class="rVideo" autoplay></video>
+        </div>
+        <div class="col-sm-6 col-md-6 col-lg-6">
+          local
+          <video class="lVideo" autoplay muted></video>
+        </div>
+      </div>
+      <span id="displayId"></span>
+      <input
+        type="text"
+        id="connId"
+        class="form-control"
+        placeholder="enter a connection id"
+        required
+      />
+      <button
+        id="conn_button"
+        class="btn btn-lg btn-success btn-block"
+        type="submit"
+      >
+        Connect
+      </button>
+      <button
+        id="call_button"
+        class="btn btn-lg btn-danger btn-block"
+        type="submit"
+      >
+        Call
+      </button>
     </div>
 
     <!--<script
@@ -79,6 +114,7 @@
       crossorigin="anonymous"
     ></script>-->
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
     <script src="/client.js" async defer></script>
   </body>
 </html>
