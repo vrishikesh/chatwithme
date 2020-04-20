@@ -42,13 +42,20 @@ socket.on("userTyping", (data) => {
 });
 
 /**
- * Video chat
+ * Start the local video camera
  */
 function getLVideo(callbacks) {
+  /**
+   * Check for getUserMedia for cross browser support
+   */
   navigator.getUserMedia =
     navigator.getUserMedia ||
     navigator.webkitGetUserMedia ||
     navigator.mozGetUserMedia;
+
+  /**
+   * Add constraints for audio and video playback
+   */
   const constraints = {
     audio: true,
     video: true,
@@ -56,12 +63,96 @@ function getLVideo(callbacks) {
   navigator.getUserMedia(constraints, callbacks.success, callbacks.error);
 }
 
+/**
+ * Start receiving the video stream
+ */
 function recStream(stream, elemid) {
   const video = geid(elemid);
 
-  video.srcObject = stream;
+  /**
+   * Older browsers may not have srcObject
+   */
+  if ("srcObject" in video) {
+    video.srcObject = stream;
+  } else {
+    /**
+     * This is only for old browsers this will be removed
+     */
+    video.src = window.URL.createObjectURL(stream);
+  }
 
   window.peer_stream = stream;
+}
+
+function onOpen() {
+  geid("displayId").innerHTML = peer.id;
+}
+
+function onConnection(connection) {
+  conn = connection;
+  peer_id = connection.peer;
+
+  geid("connId").value = peer_id;
+}
+
+function onError(err) {
+  alert("error:" + err);
+  console.log(err);
+}
+
+function handleConnectButton() {
+  peer_id = geid("connId").value;
+
+  if (peer_id) {
+    conn = peer.connect(peer_id);
+  } else {
+    alert("enter an id");
+    return false;
+  }
+}
+
+function onCall(call) {
+  const acceptCall = confirm("Do you want to accept this call?");
+
+  if (acceptCall) {
+    call.answer(window.localstream);
+
+    call.on("stream", onCallStart);
+
+    call.on("close", onCallEnd);
+  } else {
+    alert("call denied");
+    console.log("call denied");
+  }
+}
+
+function onCallStart(stream) {
+  window.peer_stream = stream;
+
+  recStream(stream, "rVideo");
+}
+
+function onCallEnd() {
+  alert("The call has ended");
+}
+
+function handleCallButton() {
+  console.log("calling a peer: " + peer_id);
+  console.log(peer);
+  if (!peer_id) {
+    peer_id = geid("connId").value;
+  }
+
+  if (peer_id) {
+    const call = peer.call(peer_id, window.localstream);
+
+    call.on("stream", onCallStart);
+
+    call.on("close", onCallEnd);
+  } else {
+    alert("enter an id");
+    return false;
+  }
 }
 
 getLVideo({
@@ -79,62 +170,32 @@ let conn, peer_id;
 
 const peer = new Peer({ key: "lwjd5qra8257b9" });
 
-peer.on("open", () => {
-  geid("displayId").innerHTML = peer.id;
-});
+/**
+ * Establishing connection to peer server
+ */
+peer.on("open", onOpen);
 
-peer.on("connection", (connection) => {
-  conn = connection;
-  peer_id = connection.peer;
+/**
+ * Receive a connection request
+ */
+peer.on("connection", onConnection);
 
-  geid("connId").value = peer_id;
-});
+/**
+ * If anything fails
+ */
+peer.on("error", onError);
 
-peer.on("error", (err) => {
-  alert("error:" + err);
-  console.log(err);
-});
+/**
+ * Establish a connection to the entered peer id
+ */
+geid("conn_button").addEventListener("click", handleConnectButton);
 
-geid("conn_button").addEventListener("click", () => {
-  peer_id = geid("connId").value;
+/**
+ * On receiving call request
+ */
+peer.on("call", onCall);
 
-  if (peer_id) {
-    conn = peer.connect(peer_id);
-  } else {
-    alert("enter an id");
-    return false;
-  }
-});
-
-peer.on("call", (call) => {
-  const acceptCall = confirm("Do you want to accept this call?");
-
-  if (acceptCall) {
-    call.answer(window.localstream);
-
-    call.on("stream", (stream) => {
-      window.peer_stream = stream;
-
-      recStream(stream, "rVideo");
-    });
-
-    call.on("close", () => {
-      alert("The call has ended");
-    });
-  } else {
-    console.log("call denied");
-  }
-});
-
-geid("call_button").addEventListener("click", () => {
-  console.log("calling a peer: " + peer_id);
-  console.log(peer);
-
-  const call = peer.call(peer_id, window.localstream);
-
-  call.on("stream", (stream) => {
-    window.peer_stream = stream;
-
-    recStream(stream, "rVideo");
-  });
-});
+/**
+ * Start call request
+ */
+geid("call_button").addEventListener("click", startPeerCall);
